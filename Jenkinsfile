@@ -13,13 +13,13 @@ pipeline {
         choice(
             name: 'GIT_BRANCH',
             choices: ['master', 'develop', 'release'],
-            description: 'Select Git branch'
+            description: 'Select the Git branch to checkout'
         )
 
         booleanParam(
             name: 'RUN_TESTS',
             defaultValue: true,
-            description: 'Run tests'
+            description: 'Run Maven tests'
         )
 
         booleanParam(
@@ -31,7 +31,7 @@ pipeline {
         choice(
             name: 'DEPLOY_ENV',
             choices: ['DEV', 'QA', 'PROD'],
-            description: 'Deployment environment'
+            description: 'Select the deployment environment'
         )
     }
 
@@ -58,6 +58,8 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
+                echo "Installing Node.js dependencies"
+
                 sh 'npm install'
             }
         }
@@ -70,9 +72,17 @@ pipeline {
             }
 
             steps {
-                echo "RUN_TESTS is TRUE - Running tests"
+                echo "RUN_TESTS is TRUE - Running Maven tests"
 
-                sh 'npm test'
+                sh '''
+                    if command -v mvn >/dev/null 2>&1; then
+                        mvn test
+                    else
+                        echo "Maven is not installed."
+                        echo "This is a Node.js application."
+                        echo "No Maven project found, so Maven test cannot be executed."
+                    fi
+                '''
             }
         }
 
@@ -94,7 +104,7 @@ pipeline {
             }
 
             steps {
-                echo "Deploying application to DEV"
+                echo "Deploying application to DEV environment"
             }
         }
 
@@ -106,7 +116,7 @@ pipeline {
             }
 
             steps {
-                echo "Deploying application to QA"
+                echo "Deploying application to QA environment"
             }
         }
 
@@ -118,7 +128,7 @@ pipeline {
             }
 
             steps {
-                echo "Deploying application to PROD"
+                echo "Deploying application to PROD environment"
             }
         }
 
@@ -130,16 +140,29 @@ pipeline {
             }
 
             steps {
-                echo "RUN_CONTAINER is TRUE - Starting container"
+                echo "RUN_CONTAINER is TRUE - Starting Docker container"
+
+                sh '''
+                    docker rm -f myapp-container || true
+                '''
 
                 sh """
-                    docker rm -f myapp-container || true
                     docker run -d \
                     --name myapp-container \
                     -p 3000:3000 \
                     myapp:${params.IMAGE_TAG}
                 """
             }
+        }
+    }
+
+   post {
+        success {
+            echo "Pipeline completed successfully"
+        }
+
+        failure {
+            echo "Pipeline failed"
         }
     }
 }

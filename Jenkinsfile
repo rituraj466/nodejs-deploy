@@ -1,6 +1,6 @@
 pipeline {
     agent any
-
+ 
     parameters {
         booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run test stage?')
         booleanParam(name: 'RUN_CONTAINER', defaultValue: false, description: 'Run the container after build?')
@@ -9,14 +9,14 @@ pipeline {
         choice(name: 'ENVIRONMENT', choices: ['dev', 'qa', 'prod'], description: 'Target environment')
         password(name: 'PASSWORD', defaultValue: '', description: 'Deployment password (masked)')
     }
-
+ 
     environment {
         REPO_URL = 'https://github.com/rituraj466/nodejs-deploy.git'
         IMAGE_NAME = 'nodejs-deploy'
     }
-
+ 
     stages {
-
+ 
         stage('Display Parameters') {
             steps {
                 echo "RUN_TESTS = ${params.RUN_TESTS}"
@@ -27,14 +27,14 @@ pipeline {
                 echo "PASSWORD = ******"
             }
         }
-
+ 
         stage('Checkout Selected Branch') {
             steps {
                 script {
                     // Null-safety: fall back to 'main' if BRANCH param is empty/null
                     def branchToCheckout = params.BRANCH?.trim() ? params.BRANCH.trim() : 'main'
                     echo "Checking out branch: ${branchToCheckout}"
-
+ 
                     checkout([
                         $class: 'GitSCM',
                         branches: [[name: "*/${branchToCheckout}"]],
@@ -43,7 +43,7 @@ pipeline {
                 }
             }
         }
-
+ 
         stage('Run Tests') {
             when {
                 expression { return params.RUN_TESTS }
@@ -56,7 +56,7 @@ pipeline {
                 echo 'Tests step placeholder - update with real test command if needed.'
             }
         }
-
+ 
         stage('Build Docker Image') {
             steps {
                 script {
@@ -66,7 +66,7 @@ pipeline {
                 }
             }
         }
-
+ 
         stage('Deploy DEV') {
             when {
                 expression { return params.ENVIRONMENT == 'dev' }
@@ -76,7 +76,7 @@ pipeline {
                 // Add your dev deployment commands here
             }
         }
-
+ 
         stage('Deploy QA') {
             when {
                 expression { return params.ENVIRONMENT == 'qa' }
@@ -86,7 +86,7 @@ pipeline {
                 // Add your qa deployment commands here
             }
         }
-
+ 
         stage('Deploy PROD') {
             when {
                 expression { return params.ENVIRONMENT == 'prod' }
@@ -96,8 +96,8 @@ pipeline {
                 // Add your prod deployment commands here
             }
         }
-
-        stage('Run Container') {
+ 
+       stage('Run Container') {
             when {
                 expression { return params.RUN_CONTAINER }
             }
@@ -108,3 +108,15 @@ pipeline {
                     sh "docker run -d --name ${env.IMAGE_NAME}-container ${env.IMAGE_NAME}:${tag}"
                 }
             }
+        }
+    }
+ 
+    post {
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed. Check logs above for details.'
+        }
+    }
+}

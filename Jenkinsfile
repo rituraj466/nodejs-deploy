@@ -1,6 +1,20 @@
 pipeline {
     agent any
 
+    parameters {
+        booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Run test stage?')
+        booleanParam(name: 'RUN_CONTAINER', defaultValue: false, description: 'Run the container after build?')
+        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag')
+        string(name: 'BRANCH', defaultValue: 'main', description: 'Git branch to checkout')
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'qa', 'prod'], description: 'Target environment')
+        password(name: 'PASSWORD', defaultValue: '', description: 'Deployment password (masked)')
+    }
+
+    environment {
+        REPO_URL = 'https://github.com/rituraj466/nodejs-deploy.git'
+        IMAGE_NAME = 'nodejs-deploy'
+    }
+
     stages {
 
         stage('Display Parameters') {
@@ -16,84 +30,81 @@ pipeline {
 
         stage('Checkout Selected Branch') {
             steps {
-                echo "Checking out branch: ${params.BRANCH}"
+                script {
+                    // Null-safety: fall back to 'main' if BRANCH param is empty/null
+                    def branchToCheckout = params.BRANCH?.trim() ? params.BRANCH.trim() : 'main'
+                    echo "Checking out branch: ${branchToCheckout}"
 
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: "*/${params.BRANCH}"]],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/rituraj466/nodejs-deploy.git'
-                    ]]
-                ])
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${branchToCheckout}"]],
+                        userRemoteConfigs: [[url: env.REPO_URL]]
+                    ])
+                }
             }
         }
 
         stage('Run Tests') {
             when {
-                expression {
-                    params.RUN_TESTS == true
-                }
+                expression { return params.RUN_TESTS }
             }
             steps {
-                echo "RUN_TESTS is true - application test stage selected"
+                echo 'Running tests...'
+                // Original job had "echo message and remove npm test" per commit history.
+                // Replace this echo with actual test commands, e.g.:
+                // sh 'npm install && npm test'
+                echo 'Tests step placeholder - update with real test command if needed.'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo "Building Docker image with tag: ${params.IMAGE_TAG}"
-
-                sh "docker build -t myapp:${params.IMAGE_TAG} ."
+                script {
+                    def tag = params.IMAGE_TAG?.trim() ? params.IMAGE_TAG.trim() : 'latest'
+                    echo "Building Docker image: ${env.IMAGE_NAME}:${tag}"
+                    sh "docker build -t ${env.IMAGE_NAME}:${tag} ."
+                }
             }
         }
 
         stage('Deploy DEV') {
             when {
-                expression {
-                    params.ENVIRONMENT == 'dev'
-                }
+                expression { return params.ENVIRONMENT == 'dev' }
             }
             steps {
-                echo "Deploying application to DEV environment"
+                echo 'Deploying to DEV environment...'
+                // Add your dev deployment commands here
             }
         }
 
         stage('Deploy QA') {
             when {
-                expression {
-                    params.ENVIRONMENT == 'qa'
-                }
+                expression { return params.ENVIRONMENT == 'qa' }
             }
             steps {
-                echo "Deploying application to QA environment"
+                echo 'Deploying to QA environment...'
+                // Add your qa deployment commands here
             }
         }
 
         stage('Deploy PROD') {
             when {
-                expression {
-                    params.ENVIRONMENT == 'prod'
-                }
+                expression { return params.ENVIRONMENT == 'prod' }
             }
             steps {
-                echo "Deploying application to PROD environment"
+                echo 'Deploying to PROD environment...'
+                // Add your prod deployment commands here
             }
         }
 
         stage('Run Container') {
             when {
-                expression {
-                    params.RUN_CONTAINER == true
-                }
+                expression { return params.RUN_CONTAINER }
             }
             steps {
-                echo "Running Docker container with image: myapp:${params.IMAGE_TAG}"
-
-                sh """
-                    docker rm -f myapp-container || true
-                    docker run -d --name myapp-container -p 3000:3000 myapp:${params.IMAGE_TAG}
-                """
+                script {
+                    def tag = params.IMAGE_TAG?.trim() ? params.IMAGE_TAG.trim() : 'latest'
+                    echo "Running container from image: ${env.IMAGE_NAME}:${tag}"
+                    sh "docker run -d --name ${env.IMAGE_NAME}-container ${env.IMAGE_NAME}:${tag}"
+                }
             }
-        }
-    }
-}

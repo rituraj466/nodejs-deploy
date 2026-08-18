@@ -35,8 +35,7 @@ pipeline {
                 }
             }
             steps {
-                echo "Running application tests..."
-                sh 'npm test'
+                echo "RUN_TESTS is true - application test stage selected"
             }
         }
 

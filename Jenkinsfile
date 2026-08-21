@@ -19,7 +19,7 @@ pipeline {
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([
                             string(
-                                credentialsId: 'sonarqube-token',
+                                credentialsId: 'sonarqube authentication token',
                                 variable: 'SONAR_TOKEN'
                             )
                         ]) {

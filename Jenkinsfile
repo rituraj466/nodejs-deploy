@@ -17,12 +17,14 @@ pipeline {
                     def scannerHome = tool 'SonarScanner'
 
                     withSonarQubeEnv('SonarQube') {
+
                         withCredentials([
                             string(
-                                credentialsId: 'sonarqube authentication token',
+                                credentialsId: 'sonarqube-token',
                                 variable: 'SONAR_TOKEN'
                             )
                         ]) {
+
                             sh """
                                 ${scannerHome}/bin/sonar-scanner \
                                 -Dsonar.token=\${SONAR_TOKEN}

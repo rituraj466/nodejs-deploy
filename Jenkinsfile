@@ -2,11 +2,16 @@ pipeline {
 
     agent any
 
+    tools {
+        sonarQube 'SonarScanner'
+    }
+
     stages {
 
         stage('Checkout') {
             steps {
-                git 'https://github.com/rituraj466/nodejs-deploy.git'
+                git branch: 'main',
+                    url: 'https://github.com/rituraj466/nodejs-deploy.git'
             }
         }
 
@@ -28,18 +33,18 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t python-app:latest .'
+                sh 'docker build -t nodejs-app:latest .'
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline completed successfully - Quality Gate PASSED'
+            echo 'SUCCESS: Quality Gate passed and Docker image was built.'
         }
 
         failure {
-            echo 'Pipeline failed - Quality Gate FAILED or another stage failed'
+            echo 'FAILURE: Quality Gate failed or another stage failed.'
         }
     }
 }

@@ -6,8 +6,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'YOUR_GITHUB_REPO_URL'
+                git 'https://github.com/rituraj466/nodejs-deploy.git'
             }
         }
 
@@ -36,11 +35,11 @@ pipeline {
 
     post {
         success {
-            echo 'SUCCESS: Quality Gate passed and Docker image was built.'
+            echo 'Pipeline completed successfully - Quality Gate PASSED'
         }
 
         failure {
-            echo 'FAILURE: Quality Gate failed or another pipeline stage failed.'
+            echo 'Pipeline failed - Quality Gate FAILED or another stage failed'
         }
     }
 }
